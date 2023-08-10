@@ -135,6 +135,8 @@ def normalize(x, normalization_method, normalization_params):
         return (x - mean) / (std)
     elif normalization_method == 'zmeanminmax':
         return (x - mean) / (max - min)
+    elif normalization_method == 'max':
+        return (x) / (tf.math.maximum(tf.math.abs(max), tf.math.abs(min)))
     else:
         return x
 
@@ -161,6 +163,8 @@ def unnormalized_data(data, normalization_method, normalization_params):
         return data * (max_feature - min_feature) + min_feature
     elif normalization_method == 'zmeanminmax':
         return data * (max_feature - min_feature) + mean_feature
+    elif normalization_method == 'max':
+        return (data) * (tf.math.maximum(tf.math.abs(max_feature), tf.math.abs(min_feature)))
     else:
         return data
 
