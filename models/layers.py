@@ -197,3 +197,17 @@ class TransformerBlock(tf.keras.layers.Layer):
         x_h = self.dp_2(x_h, training=training)
         x   = x + x_h if self.res_connection else x_h
         return x
+
+class DifferenceLayer(tf.keras.layers.Layer):
+    def call(self, inputs):
+        # Calculate differences between consecutive elements along the second dimension
+        diffs = inputs[:, 1:, :] - inputs[:, :-1, :]
+        diffs = tf.pad(diffs, paddings=[[0, 0], [1, 0], [0, 0]])
+        
+        return diffs
+    
+class ReverseDifferenceLayer(tf.keras.layers.Layer):
+    def call(self, inputs):
+        # Cumulatively sum the differences to reconstruct the original data
+        original_data = tf.cumsum(inputs, axis=1)
+        return original_data
