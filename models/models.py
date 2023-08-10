@@ -14,9 +14,10 @@ def build_encoder(cfg):
         tf.keras.Model: The constructed encoder model.
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
-    if cfg.Model.DifferenceLayer:
-        inp = DifferenceLayer()(inp)
     x = inp
+
+    if cfg.Model.Differential_Input:
+        x = DifferenceLayer()(x)
     act = getattr(tf.nn, cfg.Model.activation)
     
     if cfg.Model.encoder_type == 'LSTM':
@@ -94,7 +95,7 @@ def build_decoder(cfg):
                                  res_connection=cfg.Model.Transformer.res_connection)(x)
 
     decoder_output = tf.keras.layers.Dense(cfg.Model.num_feat)(x)
-    if cfg.Model.DifferenceLayer: 
+    if cfg.Model.Differential_Input: 
         decoder_output = ReverseDifferenceLayer()(decoder_output)
     decoder = tf.keras.Model(inputs=inp, outputs=decoder_output, name='decoder')
     decoder.summary()
