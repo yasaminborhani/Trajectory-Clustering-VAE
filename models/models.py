@@ -127,7 +127,7 @@ class VAE(tf.keras.Model):
         super().__init__(**kwargs)
         self.encoder = build_encoder(cfg)
         self.decoder = build_decoder(cfg)
-        self.loss = getattr(tf.keras.losses, cfg.Train.loss_type)
+        self.recon_loss = getattr(tf.keras.losses, cfg.Train.loss_type)
         self.kl_weights = (cfg.Train.kl_weight,
                            cfg.Train.kl_weight_start, 
                            cfg.Train.kl_decay_rate)  # (kl_weight, kl_weight_start, kl_decay_rate)
@@ -175,7 +175,7 @@ class VAE(tf.keras.Model):
             reconstruction = self.decoder(z, training=True)
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
-                    self.loss(data, reconstruction), axis=1
+                    self.recon_loss(data, reconstruction), axis=1
                 )
             )
             kl_loss = -klw * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
@@ -208,7 +208,7 @@ class VAE(tf.keras.Model):
         reconstruction = self.decoder(z, training=False)
         reconstruction_loss = tf.reduce_mean(
             tf.reduce_sum(
-                self.loss(data, reconstruction), axis=1
+                self.recon_loss(data, reconstruction), axis=1
             )
         )
         kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
