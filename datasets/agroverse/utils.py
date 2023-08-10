@@ -4,7 +4,7 @@ import numpy as np
 
 
 
-def parse_text(data):
+def parse_text(data, cfg):
     """
     Parse text data into a processed numerical array.
     
@@ -16,7 +16,7 @@ def parse_text(data):
     """
     processed_data = tf.strings.split(data)[1:]
     processed_data = tf.strings.to_number(processed_data, tf.float32)
-    processed_data = tf.reshape(processed_data, (60, 2))
+    processed_data = tf.reshape(processed_data, (cfg.Model.temporal, cfg.Model.num_feat))
     
     return processed_data
 
@@ -85,7 +85,7 @@ def count_samples(acc, sample):
     """
     return acc + 1
 
-def param_extractor(dataset):
+def param_extractor(dataset, cfg):
     """
     Extract normalization parameters from the dataset.
     
@@ -95,20 +95,20 @@ def param_extractor(dataset):
     Returns:
         tuple: Tuple containing min, max, mean, and std normalization parameters.
     """
-    max_possible_value = tf.constant(float('inf'), shape=(1, 2), dtype=tf.float32)
+    max_possible_value = tf.constant(float('inf'), shape=(1, cfg.Model.num_feat), dtype=tf.float32)
     min_feature = dataset.reduce(max_possible_value, lambda x, y: matrix_min(x, y))
     
-    min_possible_value = tf.constant(float('-inf'), shape=(1, 2), dtype=tf.float32)
+    min_possible_value = tf.constant(float('-inf'), shape=(1, cfg.Model.num_feat), dtype=tf.float32)
     max_feature = dataset.reduce(min_possible_value, lambda x, y: matrix_max(x, y))
     
-    initial_sum = tf.constant([0.0, 0.0], shape=(1, 2), dtype=tf.float32)
+    initial_sum = tf.zeros(shape=(1, cfg.Model.num_feat), dtype=tf.float32)
     total_sum = dataset.reduce(initial_sum, reduce_fn)
     num_samples = dataset.reduce(tf.constant(0), lambda acc, _: count_samples(acc, _))
-    mean_feature = total_sum / tf.cast(num_samples * 60, tf.float32)
+    mean_feature = total_sum / tf.cast(num_samples * cfg.Model.temporal, tf.float32)
     
-    initial_square_sum = tf.constant([0.0, 0.0], shape=(1, 2), dtype=tf.float32)
+    initial_square_sum = tf.zeros(shape=(1, cfg.Model.num_feat), dtype=tf.float32)
     total_square_sum = dataset.reduce(initial_square_sum, reduce_square_sum)
-    std_feature = tf.math.sqrt(total_square_sum / tf.cast(num_samples * 60, tf.float32) - (mean_feature)**2)
+    std_feature = tf.math.sqrt(total_square_sum / tf.cast(num_samples * cfg.Model.temporal, tf.float32) - (mean_feature)**2)
     
     return min_feature[tf.newaxis, ...], max_feature[tf.newaxis, ...], mean_feature[tf.newaxis, ...], std_feature[tf.newaxis, ...]
 
