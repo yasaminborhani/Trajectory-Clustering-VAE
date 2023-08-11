@@ -1,7 +1,21 @@
 import tensorflow as tf
 from .layers import Sampling, PositionEncoder, AngularPositionEncoder, TransformerBlock, DifferenceLayer, ReverseDifferenceLayer, Wrapper
 
-
+def build_decoder_inputs(cfg):
+    latent_inp = tf.keras.layers.Input((cfg.Model.latent), name='z_input')
+    # direct_inp = tf.keras.layers.Input((cfg.Model.))
+    
+    initial_state = tf.keras.layers.Dense(units=2 * cfg.Model.LSTM.decoder_units[0],
+                                          trainable=True if cfg.Model.LSTM.decoder_build_init_state else False,
+                                          kernel_initializer='glorot_uniform' if cfg.Model.LSTM.decoder_build_init_state else 'zeros',
+                                          use_bias=True if cfg.Model.LSTM.decoder_build_init_state else False,
+                                          activation=cfg.Model.activation,
+                                          name='dec_initial_state')(latent_inp)
+    states = tf.keras.layers.Lambda(lambda x: tf.split(x, 2, 1))(initial_state)
+    init_state_model = tf.keras.Model(latent_inp, states, name='decoder_inputs_model')
+    init_state_model.summary()
+    return init_state_model 
+    
 def build_encoder(cfg):
     """Build the encoder network based on the provided configuration.
     
@@ -14,10 +28,8 @@ def build_encoder(cfg):
         tf.keras.Model: The constructed encoder model.
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
-    x = inp
-
-    if cfg.Model.Differential_Input:
-        x = DifferenceLayer()(x)
+    x   = tf.keras.layers.Lambda(lambda x: x[:, cfg.Model.time_shift:, :], name='time_shift')(inp)
+    x   = DifferenceLayer()(x) if cfg.Model.differential_input else x
     act = getattr(tf.nn, cfg.Model.activation)
     
     if cfg.Model.encoder_type == 'LSTM':
@@ -28,7 +40,8 @@ def build_encoder(cfg):
                                      activation=act,
                                      dropout=cfg.Model.LSTM.decoder_dropout_rate,
                                      unroll=cfg.Model.LSTM.unroll, 
-                                     return_sequences=rt_seq), cfg.Model.Bidirectional_Flag)(x)
+                                     return_sequences=rt_seq),
+                                     cfg.Model.LSTM.encoder_bidirectional)(x)
                                      
     elif cfg.Model.encoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.encoder_encoding:
@@ -80,7 +93,8 @@ def build_decoder(cfg):
                                      activation=act,
                                      dropout=cfg.Model.LSTM.decoder_dropout_rate,
                                      unroll=cfg.Model.LSTM.unroll, 
-                                     return_sequences=rt_seq), cfg.Model.Bidirectional_Flag)(x)
+                                     return_sequences=rt_seq), 
+                                     cfg.Model.LSTM.decoder_bidirectional)(x)
 
 
     elif cfg.Model.decoder_type == 'Transformer':
@@ -98,8 +112,9 @@ def build_decoder(cfg):
                                  res_connection=cfg.Model.Transformer.res_connection)(x)
 
     decoder_output = tf.keras.layers.Dense(cfg.Model.num_feat)(x)
-    if cfg.Model.Differential_Input: 
-        decoder_output = ReverseDifferenceLayer()(decoder_output)
+    
+    decoder_output = ReverseDifferenceLayer()(decoder_output) if\
+                     cfg.Model.differential_input else decoder_output
     decoder = tf.keras.Model(inputs=inp, outputs=decoder_output, name='decoder')
     decoder.summary()
     return decoder

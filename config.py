@@ -6,10 +6,12 @@ _C = CN()
 
 # Preprocess setting
 _C.Preprocess                           = CN() 
-_C.Preprocess.normalization_method      = 'zmeanminmax' # 'standardization' / 'minmax' / 'zmeanminmax'
+_C.Preprocess.normalization_method      = 'max' #'max'/'standardization' / 'minmax' / 'zmeanminmax'
+_C.Preprocess.temporal                  = 60
+_C.Preprocess.num_feat                  = 5
+_C.Preprocess.generator                 = 'tf_pipeline'
 _C.Preprocess.split                     = False 
 _C.Preprocess.split_ratio               = 0.8 
-_C.Preprocess.generator                 = 'tf_pipeline'
 
 # Training setting
 _C.Train = CN()
@@ -35,12 +37,13 @@ _C.Valid.meta_data                      = "/kaggle/input/argoverse-processed-dat
 _C.Model                                = CN()
 _C.Model.latent                         = 12
 _C.Model.temporal                       = 60
-_C.Model.num_feat                       = 2
+_C.Model.num_feat                       = 5
+_C.Model.time_shift                     = 1
+_C.Model.differential_input             = False
 _C.Model.activation                     = 'tanh'   # 'tanh' / 'leaky_relu'/ 'gelu'/...
 _C.Model.encoder_type                   = 'Transformer'   # 'LSTM' / 'Transformer'
 _C.Model.decoder_type                   = 'LSTM'   # 'LSTM' / 'Transformer'
-_C.Model.Bidirectional_Flag             = False
-_C.Model.Differential_Input             = True
+_C.Model.decoder_combined_input         = True
 
 _C.Model.Transformer                    = CN()
 _C.Model.Transformer.position_encoder   = 'angular'# 'angular' / 'embedding'
@@ -57,8 +60,11 @@ _C.Model.Transformer.res_connection     = False
 _C.Model.LSTM                           = CN()
 _C.Model.LSTM.unroll                    = False
 _C.Model.LSTM.encoder_units             = [128, 64]
-_C.Model.LSTM.decoder_units             = [32, 64]
+_C.Model.LSTM.encoder_bidirectional     = False
 _C.Model.LSTM.encoder_dropout_rate      = 0.1
+_C.Model.LSTM.decoder_units             = [32, 64]
+_C.Model.LSTM.decoder_bidirectional     = False
+_C.Model.LSTM.decoder_build_init_state  = False
 _C.Model.LSTM.decoder_dropout_rate      = 0.1
 
 # Visualization setting
