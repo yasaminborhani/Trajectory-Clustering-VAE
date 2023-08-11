@@ -71,7 +71,10 @@ def tf_pipeline_gen(cfg):
     train_dataset = train_dataset.shuffle(cfg.Train.shuffle_buffer_size)
     train_dataset = train_dataset.repeat()
     train_dataset = train_dataset.batch(cfg.Train.batch_size)
-    train_dataset = train_dataset.map(lambda x: normalize(x, normalization_method=cfg.Preprocess.normalization_method, normalization_params=normalization_params), num_parallel_calls=tf.data.AUTOTUNE)
+    train_dataset = train_dataset.map(lambda x: normalize(x,
+                                                          normalization_method=cfg.Preprocess.normalization_method,
+                                                          normalization_params=normalization_params)[..., 0:cfg.Model.num_feat],
+                                                          num_parallel_calls=tf.data.AUTOTUNE)
     train_dataset = train_dataset.prefetch(cfg.Train.prefetch_buffer_size)
 
     # validation
@@ -79,7 +82,10 @@ def tf_pipeline_gen(cfg):
     val_dataset = val_dataset.map(lambda x: parse_text(x, cfg=cfg), num_parallel_calls=tf.data.AUTOTUNE)
     val_dataset = val_dataset.cache()
     val_dataset = val_dataset.batch(cfg.Valid.batch_size)
-    val_dataset = val_dataset.map(lambda x: normalize(x, normalization_method=cfg.Preprocess.normalization_method, normalization_params=normalization_params), num_parallel_calls=tf.data.AUTOTUNE)
+    val_dataset = val_dataset.map(lambda x: normalize(x,
+                                                      normalization_method=cfg.Preprocess.normalization_method,
+                                                      normalization_params=normalization_params)[..., 0:cfg.Model.num_feat],
+                                                      num_parallel_calls=tf.data.AUTOTUNE)
     val_dataset = val_dataset.prefetch(cfg.Valid.prefetch_buffer_size)
 
     return train_dataset, val_dataset, num_train_samples, normalization_params

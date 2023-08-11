@@ -38,12 +38,13 @@ _C.Model                                = CN()
 _C.Model.latent                         = 12
 _C.Model.temporal                       = 60
 _C.Model.num_feat                       = 5
-_C.Model.time_shift                     = 1
+_C.Model.time_shift                     = 0
 _C.Model.differential_input             = False
 _C.Model.activation                     = 'tanh'   # 'tanh' / 'leaky_relu'/ 'gelu'/...
 _C.Model.encoder_type                   = 'Transformer'   # 'LSTM' / 'Transformer'
 _C.Model.decoder_type                   = 'LSTM'   # 'LSTM' / 'Transformer'
-_C.Model.decoder_combined_input         = True
+_C.Model.decoder_combined_input         = False
+_C.Model.decoder_input_type             = 'upsampled'  # 'tiled' / 'upsampled'
 
 _C.Model.Transformer                    = CN()
 _C.Model.Transformer.position_encoder   = 'angular'# 'angular' / 'embedding'
@@ -63,7 +64,7 @@ _C.Model.LSTM.encoder_units             = [128, 64]
 _C.Model.LSTM.encoder_bidirectional     = False
 _C.Model.LSTM.encoder_dropout_rate      = 0.1
 _C.Model.LSTM.decoder_units             = [32, 64]
-_C.Model.LSTM.decoder_bidirectional     = False
+_C.Model.LSTM.decoder_bidirectional     = True
 _C.Model.LSTM.decoder_build_init_state  = False
 _C.Model.LSTM.decoder_dropout_rate      = 0.1
 

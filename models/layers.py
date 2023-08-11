@@ -201,9 +201,10 @@ class TransformerBlock(tf.keras.layers.Layer):
 class Wrapper(tf.keras.layers.Layer):
     def __init__(self, layer, flag=True, **kwargs):
         super(Wrapper, self).__init__(**kwargs)
-        self.wrapper = tf.keras.layers.Bidirectional(layer) if flag else lambda x:layer(x)
-    def call(self, x):
-        return self.wrapper(x)
+        self.wrapper = tf.keras.layers.Bidirectional(layer) if flag else layer
+    def call(self, x, initial_state=None):
+        return self.wrapper(x) if initial_state is None\
+               else self.wrapper(x, initial_state=initial_state)
         
 class DifferenceLayer(tf.keras.layers.Layer):
     def call(self, inputs):

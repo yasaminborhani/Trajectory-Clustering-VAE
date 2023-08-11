@@ -3,18 +3,38 @@ from .layers import Sampling, PositionEncoder, AngularPositionEncoder, Transform
 
 def build_decoder_inputs(cfg):
     latent_inp = tf.keras.layers.Input((cfg.Model.latent), name='z_input')
-    # direct_inp = tf.keras.layers.Input((cfg.Model.))
+    decoder_states= [] 
+    multiplier = 2 if not cfg.Model.LSTM.decoder_bidirectional else 4
+    for i, unit in enumerate(cfg.Model.LSTM.decoder_units):
+        initial_state = tf.keras.layers.Dense(units=multiplier * unit,
+                                            trainable=True if \
+                                              cfg.Model.LSTM.decoder_build_init_state else False,
+                                            kernel_initializer='glorot_uniform' if\
+                                              cfg.Model.LSTM.decoder_build_init_state else 'zeros',
+                                            use_bias=True if \
+                                              cfg.Model.LSTM.decoder_build_init_state else False,
+                                            activation=cfg.Model.activation,
+                                            name=f'dec_initial_state_{i+1}')(latent_inp)
+        states = tf.keras.layers.Lambda(lambda x: tf.split(x, multiplier, 1))(initial_state)
+        decoder_states += states
     
-    initial_state = tf.keras.layers.Dense(units=2 * cfg.Model.LSTM.decoder_units[0],
-                                          trainable=True if cfg.Model.LSTM.decoder_build_init_state else False,
-                                          kernel_initializer='glorot_uniform' if cfg.Model.LSTM.decoder_build_init_state else 'zeros',
-                                          use_bias=True if cfg.Model.LSTM.decoder_build_init_state else False,
-                                          activation=cfg.Model.activation,
-                                          name='dec_initial_state')(latent_inp)
-    states = tf.keras.layers.Lambda(lambda x: tf.split(x, 2, 1))(initial_state)
-    init_state_model = tf.keras.Model(latent_inp, states, name='decoder_inputs_model')
-    init_state_model.summary()
-    return init_state_model 
+    direct_inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
+    x          = direct_inp[:, :-cfg.Model.time_shift, :] if cfg.Model.time_shift>0 else direct_inp
+    if cfg.Model.decoder_input_type=='tiled':
+        x_2 = tf.keras.layers.Lambda(lambda x:tf.tile(tf.expand_dims(x, 1), [1, cfg.Model.temporal - cfg.Model.time_shift, 1]))(latent_inp)
+    elif cfg.Model.decoder_input_type=='upsampled':
+        x_2 = tf.keras.layers.Dense((cfg.Model.temporal - cfg.Model.time_shift)* cfg.Model.latent, activation=cfg.Model.activation)(latent_inp)
+        x_2 = tf.keras.layers.Reshape(((cfg.Model.temporal - cfg.Model.time_shift), cfg.Model.latent))(x_2) 
+    
+    dec_input = tf.keras.layers.Concatenate(axis=-1)((x_2, x)) if cfg.Model.decoder_combined_input else x_2
+
+
+
+    decoder_inputs_model = tf.keras.Model([latent_inp, direct_inp],
+                                          [dec_input, *decoder_states],
+                                           name='decoder_inputs_model')
+    decoder_inputs_model.summary()
+    return decoder_inputs_model 
     
 def build_encoder(cfg):
     """Build the encoder network based on the provided configuration.
@@ -28,7 +48,7 @@ def build_encoder(cfg):
         tf.keras.Model: The constructed encoder model.
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
-    x   = tf.keras.layers.Lambda(lambda x: x[:, cfg.Model.time_shift:, :], name='time_shift')(inp)
+    x   = inp[:, cfg.Model.time_shift:, :] if cfg.Model.time_shift>0 else inp
     x   = DifferenceLayer()(x) if cfg.Model.differential_input else x
     act = getattr(tf.nn, cfg.Model.activation)
     
@@ -78,23 +98,32 @@ def build_decoder(cfg):
     Returns:
         tf.keras.Model: The constructed decoder model.
     """
-    inp = tf.keras.layers.Input((cfg.Model.latent,))
+    feat_dim = cfg.Model.latent if not cfg.Model.decoder_combined_input\
+               else cfg.Model.latent + cfg.Model.num_feat
+    inp = tf.keras.layers.Input((cfg.Model.temporal-cfg.Model.time_shift,feat_dim))
     x = inp
     act = getattr(tf.nn, cfg.Model.activation)
-    
-    x = tf.keras.layers.Dense(cfg.Model.temporal * cfg.Model.num_feat, activation=act)(x)
-    x = tf.keras.layers.Reshape((cfg.Model.temporal, cfg.Model.num_feat))(x)  
+    init_states = []
+    multiplier  = 2 if not cfg.Model.LSTM.decoder_bidirectional else 4
+    for i, unit in enumerate(cfg.Model.LSTM.decoder_units):
+        for j in range(multiplier//2):
+            init_states += [tf.keras.layers.Input((unit,), name=f'init_c{j+1}_{i+1}'),
+                            tf.keras.layers.Input((unit,), name=f'init_h{j+1}_{i+1}')]
+
+    # x = tf.keras.layers.Dense(cfg.Model.temporal * cfg.Model.num_feat, activation=act)(x)
+    # x = tf.keras.layers.Reshape((cfg.Model.temporal, cfg.Model.num_feat))(x)  
     
     if cfg.Model.decoder_type == 'LSTM':
         units = cfg.Model.LSTM.decoder_units 
         return_seq = [True] * (len(units))
-        for (unit, rt_seq) in zip(units, return_seq):
+        for i, (unit, rt_seq) in enumerate(zip(units, return_seq)):
             x = Wrapper(tf.keras.layers.LSTM(units=unit, 
                                      activation=act,
                                      dropout=cfg.Model.LSTM.decoder_dropout_rate,
                                      unroll=cfg.Model.LSTM.unroll, 
                                      return_sequences=rt_seq), 
-                                     cfg.Model.LSTM.decoder_bidirectional)(x)
+                                     cfg.Model.LSTM.decoder_bidirectional)(x,
+                                                                           initial_state=init_states[i*multiplier:(i+1)*multiplier])
 
 
     elif cfg.Model.decoder_type == 'Transformer':
@@ -115,7 +144,7 @@ def build_decoder(cfg):
     
     decoder_output = ReverseDifferenceLayer()(decoder_output) if\
                      cfg.Model.differential_input else decoder_output
-    decoder = tf.keras.Model(inputs=inp, outputs=decoder_output, name='decoder')
+    decoder = tf.keras.Model(inputs=[inp, *init_states], outputs=decoder_output, name='decoder')
     decoder.summary()
     return decoder
 
@@ -150,11 +179,13 @@ class VAE(tf.keras.Model):
         super().__init__(**kwargs)
         self.encoder = build_encoder(cfg)
         self.decoder = build_decoder(cfg)
+        self.dec_inp = build_decoder_inputs(cfg)
         self.recon_loss = getattr(tf.keras.losses, cfg.Train.loss_type)
         self.kl_weights = (cfg.Train.kl_weight,
                            cfg.Train.kl_weight_start, 
                            cfg.Train.kl_decay_rate)  # (kl_weight, kl_weight_start, kl_decay_rate)
-
+        self.ts         = cfg.Model.time_shift
+        self.return_inputs_on_call = True
         self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
         self.reconstruction_loss_tracker = tf.keras.metrics.Mean(
             name="reconstruction_loss"
@@ -195,10 +226,12 @@ class VAE(tf.keras.Model):
         klw = kl_weight - (kl_weight - kl_weight_start) * kl_decay_rate ** step
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data, training=True)
-            reconstruction = self.decoder(z, training=True)
+            dec_inputs     = self.dec_inp((z, data), training=True)
+            reconstruction = self.decoder(dec_inputs, training=True)
+            strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
-                    self.recon_loss(data, reconstruction), axis=1
+                    self.recon_loss(strided_data, reconstruction), axis=1
                 )
             )
             kl_loss = -klw * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
@@ -217,6 +250,16 @@ class VAE(tf.keras.Model):
             "reconstruction_loss": self.reconstruction_loss_tracker.result(),
             "kl_loss": self.kl_loss_tracker.result(),
         }
+    
+    def call(self, x, training=False):
+        z_mean, z_log_var, z = self.encoder(x, training=training)
+        dec_inputs     = self.dec_inp((z, x), training=training)
+        reconstruction = self.decoder(dec_inputs, training=training)
+        if not self.return_inputs_on_call:
+            return (z_mean, z_log_var, z, dec_inputs, reconstruction) 
+        else:
+            return (z_mean, z_log_var, z, dec_inputs, reconstruction, x) 
+            
 
     def test_step(self, data):
         """Perform a testing/validation step.
@@ -228,10 +271,12 @@ class VAE(tf.keras.Model):
             Dictionary containing loss values for tracking.
         """
         z_mean, z_log_var, z = self.encoder(data, training=False)
-        reconstruction = self.decoder(z, training=False)
+        dec_inputs     = self.dec_inp((z, data), training=False)
+        reconstruction = self.decoder(dec_inputs, training=False)
+        strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
         reconstruction_loss = tf.reduce_mean(
             tf.reduce_sum(
-                self.recon_loss(data, reconstruction), axis=1
+                self.recon_loss(strided_data, reconstruction), axis=1
             )
         )
         kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
