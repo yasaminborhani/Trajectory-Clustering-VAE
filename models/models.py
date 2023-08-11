@@ -1,5 +1,5 @@
 import tensorflow as tf
-from .layers import Sampling, PositionEncoder, AngularPositionEncoder, TransformerBlock, DifferenceLayer, ReverseDifferenceLayer
+from .layers import Sampling, PositionEncoder, AngularPositionEncoder, TransformerBlock, DifferenceLayer, ReverseDifferenceLayer, Wrapper
 
 
 def build_encoder(cfg):
@@ -24,11 +24,12 @@ def build_encoder(cfg):
         units = cfg.Model.LSTM.encoder_units 
         return_seq = [True] * (len(units)-1) + [False]
         for (unit, rt_seq) in zip(units, return_seq):
-            x = tf.keras.layers.LSTM(units=unit, 
+            x = Wrapper(tf.keras.layers.LSTM(units=unit, 
                                      activation=act,
-                                     dropout=cfg.Model.LSTM.encoder_dropout_rate,
+                                     dropout=cfg.Model.LSTM.decoder_dropout_rate,
                                      unroll=cfg.Model.LSTM.unroll, 
-                                     return_sequences=rt_seq)(x)
+                                     return_sequences=rt_seq), cfg.Model.Bidirectional_Flag)(x)
+                                     
     elif cfg.Model.encoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.encoder_encoding:
             x = AngularPositionEncoder()(x)
@@ -75,11 +76,13 @@ def build_decoder(cfg):
         units = cfg.Model.LSTM.decoder_units 
         return_seq = [True] * (len(units))
         for (unit, rt_seq) in zip(units, return_seq):
-            x = tf.keras.layers.LSTM(units=unit, 
+            x = Wrapper(tf.keras.layers.LSTM(units=unit, 
                                      activation=act,
                                      dropout=cfg.Model.LSTM.decoder_dropout_rate,
                                      unroll=cfg.Model.LSTM.unroll, 
-                                     return_sequences=rt_seq)(x)
+                                     return_sequences=rt_seq), cfg.Model.Bidirectional_Flag)(x)
+
+
     elif cfg.Model.decoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.decoder_encoding:
             x = AngularPositionEncoder()(x)

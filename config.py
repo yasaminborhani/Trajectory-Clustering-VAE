@@ -39,6 +39,7 @@ _C.Model.num_feat                       = 2
 _C.Model.activation                     = 'tanh'   # 'tanh' / 'leaky_relu'/ 'gelu'/...
 _C.Model.encoder_type                   = 'Transformer'   # 'LSTM' / 'Transformer'
 _C.Model.decoder_type                   = 'LSTM'   # 'LSTM' / 'Transformer'
+_C.Model.Bidirectional_Flag             = False
 _C.Model.Differential_Input             = True
 
 _C.Model.Transformer                    = CN()

@@ -198,6 +198,13 @@ class TransformerBlock(tf.keras.layers.Layer):
         x   = x + x_h if self.res_connection else x_h
         return x
 
+class Wrapper(tf.keras.layers.Layer):
+    def __init__(self, layer, flag=True, **kwargs):
+        super(Wrapper, self).__init__(**kwargs)
+        self.wrapper = tf.keras.layers.Bidirectional(layer) if flag else lambda x:layer(x)
+    def call(self, x):
+        return self.wrapper(x)
+        
 class DifferenceLayer(tf.keras.layers.Layer):
     def call(self, inputs):
         # Calculate differences between consecutive elements along the second dimension
