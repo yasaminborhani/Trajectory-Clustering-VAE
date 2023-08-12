@@ -81,6 +81,8 @@ def tf_pipeline_gen(cfg):
 
     # validation
     val_dataset = tf.data.TextLineDataset([cfg.Valid.meta_data])
+    val_dataset = val_dataset.map(pre_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+    val_dataset = val_dataset.filter(lambda x: filter_func(x, cfg=cfg))
     val_dataset = val_dataset.map(lambda x: parse_text(x, cfg=cfg), num_parallel_calls=tf.data.AUTOTUNE)
     val_dataset = val_dataset.cache()
     val_dataset = val_dataset.batch(cfg.Valid.batch_size)
