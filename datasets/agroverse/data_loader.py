@@ -62,11 +62,10 @@ def tf_pipeline_gen(cfg):
         tuple: Normalization parameters for data.
     """
     train_dataset = tf.data.TextLineDataset([cfg.Train.meta_data])
-    train_dataset = train_dataset.map(lambda x, y: parse_text((x,y), cfg=cfg), num_parallel_calls=tf.data.AUTOTUNE)
+    train_dataset = train_dataset.map(pre_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
     train_dataset = train_dataset.filter(lambda x: filter_func(x, cfg=cfg))
-    train_dataset = train_dataset.map(lambda x: x[0], num_parallel_calls=tf.data.AUTOTUNE)
-
-
+    train_dataset = train_dataset.map(lambda x: parse_text(x, cfg=cfg), num_parallel_calls=tf.data.AUTOTUNE)
+  
     num_train_samples = train_dataset.reduce(tf.constant(0), lambda acc, _: count_samples(acc, _))
     normalization_params = param_extractor(train_dataset, cfg)
 
