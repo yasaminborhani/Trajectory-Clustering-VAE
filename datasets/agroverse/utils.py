@@ -19,7 +19,7 @@ def parse_text(data, cfg):
     processed_data = tf.strings.to_number(processed_data, tf.float32)
     processed_data = tf.reshape(processed_data, (cfg.Preprocess.temporal, cfg.Preprocess.num_feat))
     
-    return processed_data, data_type
+    return (processed_data, data_type)
 
 def filter_func(data, cfg):
     return tf.math.reduce_any(tf.equal(data[1], cfg.Preprocess.object_types))
