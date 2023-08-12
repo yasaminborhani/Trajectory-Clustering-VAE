@@ -11,7 +11,8 @@ _C.Preprocess.temporal                  = 60
 _C.Preprocess.num_feat                  = 5
 _C.Preprocess.generator                 = 'tf_pipeline'
 _C.Preprocess.split                     = False 
-_C.Preprocess.split_ratio               = 0.8 
+_C.Preprocess.split_ratio               = 0.8
+_C.Preprocess.object_types              = ['vehicle']  
 
 # Training setting
 _C.Train = CN()

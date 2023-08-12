@@ -14,11 +14,15 @@ def parse_text(data, cfg):
     Returns:
         tf.Tensor: Processed numerical array.
     """
-    processed_data = tf.strings.split(data)[1:]
+    data_type      = tf.strings.split(data)[1]
+    processed_data = tf.strings.split(data)[2:]
     processed_data = tf.strings.to_number(processed_data, tf.float32)
     processed_data = tf.reshape(processed_data, (cfg.Preprocess.temporal, cfg.Preprocess.num_feat))
     
-    return processed_data
+    return processed_data, data_type
+
+def filter_func(data, cfg):
+    return tf.math.reduce_any(tf.equal(data[1], cfg.Preprocess.object_types))
 
 def matrix_min(matrix1, matrix2):
     """
