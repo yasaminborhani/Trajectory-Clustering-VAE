@@ -219,3 +219,32 @@ class ReverseDifferenceLayer(tf.keras.layers.Layer):
         # Cumulatively sum the differences to reconstruct the original data
         original_data = tf.cumsum(inputs, axis=1)
         return original_data
+
+
+class GMM(tf.keras.layers.Layer):
+    def __init__(self, num_clusters, projection_dim=None, **kwargs):
+        super(GMM, self).__init__(**kwargs)
+        self.num_clusters   = num_clusters
+        self.projection_dim = projection_dim
+    def build(self, input_shape):
+        self.centers = self.add_weight(shape=(input_shape[-1], self.num_clusters),
+                                        trainable=True,
+                                        initializer='zeros',
+                                        name='cluster_centers')
+        self.sigma   = self.add_weight(shape=(input_shape[-1], self.num_clusters),
+                                        trainable=True,
+                                        initializer='ones',
+                                        name='sigma')
+        self.projection = tf.keras.layers.Dense(units=self.projection_dim,
+                                                input_shape=(input_shape[-1],))\
+                         if self.projection_dim is not None else lambda x:x
+    def call(self, x):
+        x       = self.projection(x)
+        sigma_h = self.sigma**2.0 + 1e-7
+        dist    = tf.exp(-(x[..., tf.newaxis] - self.centers)/sigma_h)
+        probs   = tf.exp(tf.reduce_sum(dist, axis=1))/tf.reduce_sum(tf.exp(tf.reduce_sum(dist, axis=1)),axis=1,keepdims=True)
+        return probs
+    
+    @property
+    def means(self):
+        return self.centers
