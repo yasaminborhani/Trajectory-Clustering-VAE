@@ -102,3 +102,61 @@ class CustomCallback(tf.keras.callbacks.Callback):
         plt.savefig('metrics.pdf')
         plt.show()
 
+
+class KMeansTF:
+    def __init__(self, n_clusters, max_iters=100, random_state=None):
+        self.n_clusters = n_clusters
+        self.max_iters = max_iters
+        self.random_state = random_state
+        self.labels_ = None
+        self.cluster_centers_ = None
+
+    def fit(self, X):
+        num_samples, num_features = X.shape
+
+        if self.random_state is not None:
+            tf.random.set_seed(self.random_state)
+
+        if self.cluster_centers_ is not None:
+            initial_indices = tf.random.shuffle(tf.range(num_samples))[:self.n_clusters]
+            centroids = tf.Variable(self.cluster_centers_)
+        else:
+            initial_indices = tf.random.shuffle(tf.range(num_samples))[:self.n_clusters]
+            centroids = tf.Variable(tf.gather(X, initial_indices))
+
+        def compute_labels(centroids):
+            distances = tf.reduce_sum(tf.square(X[:, tf.newaxis] - centroids), axis=2)
+            labels = tf.argmin(distances, axis=1)
+            return labels
+
+        def compute_centroids(labels):
+            new_centroids = tf.stack([tf.reduce_mean(tf.boolean_mask(X, tf.equal(labels, i)), axis=0) for i in range(self.n_clusters)])
+            return new_centroids
+
+
+
+
+        iter_count = tf.constant(0)
+        def loop_condition(iter_count, centroids):
+            return tf.less(iter_count, self.max_iters)
+
+        def loop_body(iter_count, centroids):
+            labels = compute_labels(centroids)
+            new_centroids = compute_centroids(labels)
+            return iter_count + 1, new_centroids
+
+        _, final_centroids = tf.while_loop(
+            loop_condition,
+            loop_body,
+            [iter_count, centroids],
+            parallel_iterations=1
+        )
+
+        final_labels = compute_labels(final_centroids)
+        self.labels_ = final_labels.numpy()
+        self.cluster_centers_ = final_centroids.numpy()
+
+    def predict(self, X_new):
+        distances = tf.reduce_sum(tf.square(X_new[:, tf.newaxis] - self.cluster_centers_), axis=2)
+        predicted_labels = tf.argmin(distances, axis=1).numpy()
+        return predicted_labels
