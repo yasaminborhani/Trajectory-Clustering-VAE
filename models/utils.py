@@ -70,11 +70,11 @@ class CustomCallback(tf.keras.callbacks.Callback):
         """
         # Restore the model with the best weights
         self.checkpoint.restore(self.manager.latest_checkpoint)
-        history = self.model.history.history
+        history = self.model.history
 
         # Plot loss curves
         plt.suptitle('Losses')
-        keys = [key for key in list(history.keys()) if 'loss' in key and 'val' not in key]
+        keys = [key for key in list(history.history.keys()) if 'loss' in key and 'val' not in key]
         for i, key in enumerate(keys):
             plt.subplot(3,1,i+1)
             plt.plot(history.history[key], color='firebrick', linewidth=3, label='Training')
@@ -89,7 +89,7 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
         # Plot metrics curves
         plt.suptitle('Metrics')
-        keys = [key for key in list(history.keys()) if 'loss' not in key]
+        keys = [key for key in list(history.history.keys()) if 'loss' not in key]
         for i, key in enumerate(keys):
             plt.subplot(3,1,i+1)
             plt.plot(history.history[key], color='seagreen', linewidth=3, label='Validation')
