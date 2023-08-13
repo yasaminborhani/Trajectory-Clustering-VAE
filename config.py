@@ -27,6 +27,7 @@ _C.Train.kl_weight                      = 0.5
 _C.Train.kl_weight_start                = 0.01
 _C.Train.kl_decay_rate                  = 0.99995
 _C.Train.meta_data                      = "/kaggle/input/argoverse-processed-dataset/file_train.txt"
+_C.Train.callback_monitor               = 'silhouette_score'
 
 # Validation setting
 _C.Valid                                = CN()

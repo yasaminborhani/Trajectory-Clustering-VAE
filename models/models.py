@@ -65,9 +65,9 @@ def build_encoder(cfg):
                                      
     elif cfg.Model.encoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.encoder_encoding:
-            x = AngularPositionEncoder()(x)
+            x = AngularPositionEncoder(cfg.Model.temporal_dim-cfg.Model.time_shift, cfg.Model.Transformer.d_model)(x)
         elif cfg.Model.Transformer.position_encoder == 'embedding' and cfg.Model.Transformer.encoder_encoding:
-            x = PositionEncoder()(x)
+            x = PositionEncoder(cfg.Model.temporal_dim-cfg.Model.time_shift, cfg.Model.Transformer.d_model)(x)
         else: 
             x = tf.keras.layers.Dense(units=cfg.Model.Transformer.d_model)(x)
             
@@ -128,9 +128,9 @@ def build_decoder(cfg):
 
     elif cfg.Model.decoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.decoder_encoding:
-            x = AngularPositionEncoder()(x)
+            x = AngularPositionEncoder(cfg.Model.temporal_dim-cfg.Model.time_shift, cfg.Model.Transformer.d_model)(x)
         elif cfg.Model.Transformer.position_encoder == 'embedding' and cfg.Model.Transformer.decoder_encoding:
-            x = PositionEncoder()(x)
+            x = PositionEncoder(cfg.Model.temporal_dim-cfg.Model.time_shift, cfg.Model.Transformer.d_model)(x)
         else: 
             x = tf.keras.layers.Dense(units=cfg.Model.Transformer.d_model)(x)
         for i in range(cfg.Model.Transformer.encoder_blocks):

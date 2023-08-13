@@ -5,6 +5,8 @@ from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 import sys
+sys.path.append('..')
+from datasets.agroverse.utils import unnormalized_data
 
 def create_bar_chart(data_dict, title):
     categories = list(data_dict.keys())
