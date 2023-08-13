@@ -70,7 +70,7 @@ class CustomCallback(tf.keras.callbacks.Callback):
         """
         # Restore the model with the best weights
         self.checkpoint.restore(self.manager.latest_checkpoint)
-        history = self.model.history 
+        history = self.model.history.history
 
         # Plot loss curves
         plt.suptitle('Losses')
