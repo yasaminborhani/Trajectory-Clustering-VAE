@@ -104,7 +104,7 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
 
 class SupervisionCallback(tf.keras.callbacks.Callback):
-    def __init__(self, data, num_data, cfg):
+    def __init__(self, data, num_data, cfg, **kwargs):
         super(SupervisionCallback, self).__init__(**kwargs)
         self.data            = data
         self.num_data        = num_data.numpy()

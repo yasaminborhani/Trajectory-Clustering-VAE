@@ -208,8 +208,8 @@ class VAE(tf.keras.Model):
     
 
         if cfg.Train.SelfSupVis.apply_supervision:
-            gmm_layers = [GMM(num_clusters, projection_dim, name=f'gmm_w_{num_clusters}_clusters') for (num_clusters, projection_dim) in zip(cfg.Train.SelfSupVis.num_clusters, cfg.Train.SelfSupVis.projection_dim)]
-            clustering_supervision = [KMeansTF(num_clusters) for num_clusters in cfg.Train.SelfSupVis.num_clusters]
+            self.gmm_layers = [GMM(num_clusters, projection_dim, name=f'gmm_w_{num_clusters}_clusters') for (num_clusters, projection_dim) in zip(cfg.Train.SelfSupVis.num_clusters, cfg.Train.SelfSupVis.projection_dim)]
+            self.clustering_supervision = [KMeansTF(num_clusters) for num_clusters in cfg.Train.SelfSupVis.num_clusters]
 
 
     @property
@@ -226,9 +226,10 @@ class VAE(tf.keras.Model):
     def self_supervision_step(self, z_mean):
         loss = 0.0
         for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
-            y_true = self.model.clustering_supervision[i].predict(z_mean)
-            y_pred = self.model.gmm_layers[i](z_mean)
-
+            y_true = tf.squeeze(tf.one_hot(tf.cast(self.clustering_supervision[i].predict(z_mean), dtype=tf.int32), depth=self.cfg.Train.SelfSupVis.num_clusters[i]))
+        
+            y_pred = self.gmm_layers[i](z_mean)
+            
             loss =  loss + self.supvis_loss(y_true, y_pred)
 
         sv_weight = self.sv_weights[0]
@@ -238,7 +239,7 @@ class VAE(tf.keras.Model):
         step = tf.cast(self.optimizer.iterations, tf.float32)
         svw = sv_weight - (sv_weight - sv_weight_start) * sv_decay_rate ** step
 
-        return svw * loss
+        return svw * tf.reduce_mean(loss)
 
 
     def train_step(self, data):
