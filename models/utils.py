@@ -186,6 +186,12 @@ class KMeansTF:
         self.cluster_centers_ = final_centroids.numpy()
 
     def predict(self, X_new):
-        distances = tf.reduce_sum(tf.square(X_new[:, tf.newaxis] - self.cluster_centers_), axis=2)
-        predicted_labels = tf.argmin(distances, axis=1).numpy()
-        return predicted_labels
+        input_shape = tf.shape(X_new)
+        if self.cluster_centers_ is not None:
+            distances = tf.reduce_sum(tf.square(X_new[:, tf.newaxis] - self.cluster_centers_), axis=2)
+            predicted_labels = tf.argmin(distances, axis=1).numpy()
+            return predicted_labels
+        else:
+            return tf.zeros((input_shape[0], 1))
+
+            

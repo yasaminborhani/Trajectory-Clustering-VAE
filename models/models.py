@@ -204,6 +204,7 @@ class VAE(tf.keras.Model):
             name="val_reconstruction_loss"
         )
         self.val_kl_loss_tracker = tf.keras.metrics.Mean(name="val_kl_loss")
+        self.cfg = cfg
     
 
         if cfg.Train.SelfSupVis.apply_supervision:
