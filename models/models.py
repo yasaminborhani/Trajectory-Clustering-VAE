@@ -1,5 +1,6 @@
 import tensorflow as tf
 from .layers import *
+from .utils import KMeansTF
 
 def build_decoder_inputs(cfg):
     latent_inp = tf.keras.layers.Input((cfg.Model.latent), name='z_input')
@@ -197,6 +198,11 @@ class VAE(tf.keras.Model):
             name="val_reconstruction_loss"
         )
         self.val_kl_loss_tracker = tf.keras.metrics.Mean(name="val_kl_loss")
+
+        if cfg.Train.SelfSupVis.apply_supervision:
+            gmm_layers = [GMM(num_clusters, projection_dim, name=f'gmm_w_{num_clusters}_clusters') for (num_clusters, projection_dim) in zip(cfg.Train.SelfSupVis.num_clusters, cfg.Train.SelfSupVis.projection_dim)]
+            clustering_supervision = [KMeansTF(num_clusters) for num_clusters in cfg.Train.SelfSupVis.num_clusters]
+
 
     @property
     def metrics(self):

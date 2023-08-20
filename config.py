@@ -29,6 +29,19 @@ _C.Train.kl_decay_rate                  = 0.99995
 _C.Train.meta_data                      = "/kaggle/input/argoverse-processed-dataset/file_train.txt"
 _C.Train.callback_monitor               = 'silhouette_score'
 
+# Supervised Learning
+_C.Train.SelfSupVis                      = CN()
+_C.Train.SelfSupVis.num_clusters         = [3]
+_C.Train.SelfSupVis.update_frequency     = 3
+_C.Train.SelfSupVis.start_epoch          = 3
+_C.Train.SelfSupVis.clustering_method    = 'k-means'
+_C.Train.SelfSupVis.apply_supervision    = False
+_C.Train.SelfSupVis.projection_dim       = False
+_C.Train.SelfSupVis.loss                 = 'mae'
+_C.Train.SelfSupVis.start_weight         = 0.01
+_C.Train.SelfSupVis.end_weight           = 0.5
+_C.Train.SelfSupVis.decay_rate           = 0.995
+
 # Validation setting
 _C.Valid                                = CN()
 _C.Valid.batch_size                     = 128
