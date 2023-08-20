@@ -238,6 +238,7 @@ class GMM(tf.keras.layers.Layer):
         self.projection = tf.keras.layers.Dense(units=self.projection_dim,
                                                 input_shape=(input_shape[-1],))\
                          if self.projection_dim is not None else lambda x:x
+        self.projection.build(input_shape=input_shape)
     def call(self, x):
         x       = self.projection(x)
         sigma_h = self.sigma**2.0 + 1e-7

@@ -182,9 +182,15 @@ class VAE(tf.keras.Model):
         self.decoder = build_decoder(cfg)
         self.dec_inp = build_decoder_inputs(cfg)
         self.recon_loss = getattr(tf.keras.losses, cfg.Train.loss_type)
+        self.supvis_loss = getattr(tf.keras.losses, cfg.Train.SelfSupVis.loss)
+        self.apply_supervision = cfg.Train.SelfSupVis.apply_supervision
         self.kl_weights = (cfg.Train.kl_weight,
                            cfg.Train.kl_weight_start, 
                            cfg.Train.kl_decay_rate)  # (kl_weight, kl_weight_start, kl_decay_rate)
+        self.sv_weights = (cfg.Train.SelfSupVis.start_weight,
+                           cfg.Train.SelfSupVis.end_weight, 
+                           cfg.Train.SelfSupVis.decay_rate)  # (sv_weight, sv_weight_start, sv_decay_rate)
+
         self.ts         = cfg.Model.time_shift
         self.return_inputs_on_call = True
         self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
@@ -198,6 +204,7 @@ class VAE(tf.keras.Model):
             name="val_reconstruction_loss"
         )
         self.val_kl_loss_tracker = tf.keras.metrics.Mean(name="val_kl_loss")
+    
 
         if cfg.Train.SelfSupVis.apply_supervision:
             gmm_layers = [GMM(num_clusters, projection_dim, name=f'gmm_w_{num_clusters}_clusters') for (num_clusters, projection_dim) in zip(cfg.Train.SelfSupVis.num_clusters, cfg.Train.SelfSupVis.projection_dim)]
@@ -215,6 +222,24 @@ class VAE(tf.keras.Model):
             self.val_kl_loss_tracker,
         ]
 
+    def self_supervision_step(self, z_mean):
+        loss = 0.0
+        for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
+            y_true = self.model.clustering_supervision[i].predict(z_mean)
+            y_pred = self.model.gmm_layers[i](z_mean)
+
+            loss =  loss + self.supvis_loss(y_true, y_pred)
+
+        sv_weight = self.sv_weights[0]
+        sv_weight_start = self.sv_weights[1]
+        sv_decay_rate = self.sv_weights[2]
+
+        step = tf.cast(self.optimizer.iterations, tf.float32)
+        svw = sv_weight - (sv_weight - sv_weight_start) * sv_decay_rate ** step
+
+        return svw * loss
+
+
     def train_step(self, data):
         """Perform a training step.
 
@@ -230,6 +255,8 @@ class VAE(tf.keras.Model):
 
         step = tf.cast(self.optimizer.iterations, tf.float32)
         klw = kl_weight - (kl_weight - kl_weight_start) * kl_decay_rate ** step
+
+
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data, training=True)
             dec_inputs     = self.dec_inp((z, data), training=True)
@@ -243,6 +270,10 @@ class VAE(tf.keras.Model):
             kl_loss = -klw * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
             kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
             total_loss = reconstruction_loss + kl_loss
+            if self.apply_supervision:
+                supervision_loss = self.self_supervision_step(z_mean)
+                total_loss = total_loss + supervision_loss
+
         grads = tape.gradient(total_loss, self.trainable_weights)
 
         self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
@@ -288,6 +319,11 @@ class VAE(tf.keras.Model):
         kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
         kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
         total_loss = reconstruction_loss + kl_loss
+        if self.apply_supervision:
+                supervision_loss = self.self_supervision_step(z_mean)
+                total_loss = total_loss + supervision_loss
+
+
         self.val_total_loss_tracker.update_state(total_loss)
         self.val_reconstruction_loss_tracker.update_state(reconstruction_loss)
         self.val_kl_loss_tracker.update_state(kl_loss)

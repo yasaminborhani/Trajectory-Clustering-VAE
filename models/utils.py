@@ -103,6 +103,35 @@ class CustomCallback(tf.keras.callbacks.Callback):
         plt.show()
 
 
+class SupervisionCallback(tf.keras.callbacks.Callback):
+    def __init__(self, data, num_data, cfg):
+        super(SupervisionCallback, self).__init__(**kwargs)
+        self.data            = data
+        self.num_data        = num_data.numpy()
+        self.batch_size      = cfg.Train.batch_size
+        self.start_epoch     = cfg.Train.SelfSupVis.start_epoch
+        self.train_frequency = cfg.Train.SelfSupVis.update_frequency
+        self.input_shape     = (cfg.Preprocess.temporal, cfg.Preprocess.num_feat)
+
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch + 1 == self.start_epoch:
+            z_mean, _, z = self.model.encoder.predict(self.data, steps = self.num_data/self.batch_size, verbose=0)
+            for i in range(len(self.model.clustering_supervision)):
+                self.model.clustering_supervision[i].fit(z_mean)
+                c_cluster = self.model.clustering_supervision[i].cluster_centers_
+                init_weight = self.model.gmm_layers[i].get_weights()
+                new_weights = [tf.transpose(c_cluster), *init_weight[1:]]
+                self.model.gmm_layers[i].set_weights(new_weights)
+        
+            
+        if epoch + 1 > self.start_epoch and epoch % self.train_frequency == 0:
+            z_mean, _, z = self.model.encoder.predict(self.data, steps = self.num_data/self.batch_size, verbose=0)
+            for i in range(len(self.model.clustering_supervision)):
+                self.model.clustering_supervision[i].fit(z_mean)
+
+
+
+
 class KMeansTF:
     def __init__(self, n_clusters, max_iters=100, random_state=None):
         self.n_clusters = n_clusters
