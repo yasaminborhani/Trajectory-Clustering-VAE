@@ -232,7 +232,7 @@ class GMM(tf.keras.layers.Layer):
                                         initializer='zeros',
                                         name='cluster_centers')
         self.sigma   = self.add_weight(shape=(input_shape[-1], self.num_clusters),
-                                        trainable=True,
+                                        trainable=False,
                                         initializer='ones',
                                         name='sigma')
         self.projection = tf.keras.layers.Dense(units=self.projection_dim,
