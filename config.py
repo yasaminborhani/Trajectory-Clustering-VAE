@@ -38,7 +38,7 @@ _C.Train.SelfSupVis.clustering_method    = 'k-means'
 _C.Train.SelfSupVis.apply_supervision    = True
 _C.Train.SelfSupVis.projection_dim       = [12]
 _C.Train.SelfSupVis.loss                 = 'categorical_crossentropy'
-_C.Train.SelfSupVis.start_weight         = 0.01
+_C.Train.SelfSupVis.start_weight         = 0.0
 _C.Train.SelfSupVis.end_weight           = 0.5
 _C.Train.SelfSupVis.decay_rate           = 0.995
 

@@ -115,6 +115,7 @@ class SupervisionCallback(tf.keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         if epoch + 1 == self.start_epoch:
+            self.model.supvis_loss_flag = True
             z_mean, _, z = self.model.encoder.predict(self.data, steps = self.num_data/self.batch_size, verbose=0)
             for i in range(len(self.model.clustering_supervision)):
                 self.model.clustering_supervision[i].fit(z_mean)
@@ -122,6 +123,9 @@ class SupervisionCallback(tf.keras.callbacks.Callback):
                 init_weight = self.model.gmm_layers[i].get_weights()
                 new_weights = [tf.transpose(c_cluster), *init_weight[1:]]
                 self.model.gmm_layers[i].set_weights(new_weights)
+
+                for layer in self.model.gmm_layers:
+                    layer.trainable = True
         
             
         if epoch + 1 > self.start_epoch and epoch % self.train_frequency == 0:

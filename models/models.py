@@ -184,6 +184,7 @@ class VAE(tf.keras.Model):
         self.recon_loss = getattr(tf.keras.losses, cfg.Train.loss_type)
         self.supvis_loss = getattr(tf.keras.losses, cfg.Train.SelfSupVis.loss)
         self.apply_supervision = cfg.Train.SelfSupVis.apply_supervision
+        self.supvis_loss_flag = False
         self.kl_weights = (cfg.Train.kl_weight,
                            cfg.Train.kl_weight_start, 
                            cfg.Train.kl_decay_rate)  # (kl_weight, kl_weight_start, kl_decay_rate)
@@ -211,6 +212,9 @@ class VAE(tf.keras.Model):
             self.gmm_layers = [GMM(num_clusters, projection_dim, name=f'gmm_w_{num_clusters}_clusters') for (num_clusters, projection_dim) in zip(cfg.Train.SelfSupVis.num_clusters, cfg.Train.SelfSupVis.projection_dim)]
             self.clustering_supervision = [KMeansTF(num_clusters) for num_clusters in cfg.Train.SelfSupVis.num_clusters]
 
+            for layer in self.gmm_layers:
+                layer.trainable = False
+
 
     @property
     def metrics(self):
@@ -229,6 +233,8 @@ class VAE(tf.keras.Model):
             y_true = tf.squeeze(tf.one_hot(tf.cast(self.clustering_supervision[i].predict(z_mean), dtype=tf.int32), depth=self.cfg.Train.SelfSupVis.num_clusters[i]))
         
             y_pred = self.gmm_layers[i](z_mean)
+            if self.supvis_loss_flag:
+                y_pred = y_true
             
             loss =  loss + self.supvis_loss(y_true, y_pred)
 
@@ -240,6 +246,31 @@ class VAE(tf.keras.Model):
         svw = sv_weight - (sv_weight - sv_weight_start) * sv_decay_rate ** step
 
         return svw * tf.reduce_mean(loss)
+
+    def cluster(self, z_mean):
+        if self.apply_supervision:
+            prob = []
+            labels = []
+            for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
+                gmm_out = self.gmm_layers[i](z_mean)
+                label = tf.math.argmax(gmm_out, axis=-1)
+                prob.append(gmm_out)
+                labels.append(label)
+
+            return prob, labels
+        else:
+            prob = []
+            labels = []
+            for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
+                clustering_supervision_out = self.clustering_supervision[i](z_mean)
+                one_hot_labels = tf.one_hot(clustering_supervision_out, depth=self.cfg.Train.SelfSupVis.num_cluster[i])
+                prob.append(one_hot_labels)
+                labels.append(clustering_supervision_out)
+
+            return prob, labels
+
+
+
 
 
     def train_step(self, data):
