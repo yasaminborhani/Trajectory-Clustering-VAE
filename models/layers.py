@@ -234,7 +234,7 @@ class GMM(tf.keras.layers.Layer):
         self.sigma   = self.add_weight(shape=(input_shape[-1], self.num_clusters),
                                         trainable=False,
                                         initializer='ones',
-                                        name='sigma')
+                                        name='sigma') * 10.0
         self.projection = tf.keras.layers.Dense(units=self.projection_dim,
                                                 input_shape=(input_shape[-1],))\
                          if self.projection_dim is not None else lambda x:x
