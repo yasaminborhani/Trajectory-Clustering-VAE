@@ -251,23 +251,27 @@ class VAE(tf.keras.Model):
         if self.apply_supervision:
             prob = []
             labels = []
+            centers = []
             for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
                 gmm_out = self.gmm_layers[i](z_mean)
                 label = tf.math.argmax(gmm_out, axis=-1)
                 prob.append(gmm_out)
                 labels.append(label)
+                centers.append(self.gmm_layers[i].means)
 
-            return prob, labels
+            return prob, labels, centers
         else:
             prob = []
             labels = []
+            centers = []
             for i in range(len(self.cfg.Train.SelfSupVis.num_clusters)):
                 clustering_supervision_out = self.clustering_supervision[i](z_mean)
                 one_hot_labels = tf.one_hot(clustering_supervision_out, depth=self.cfg.Train.SelfSupVis.num_cluster[i])
                 prob.append(one_hot_labels)
                 labels.append(clustering_supervision_out)
+                centers.append(self.clustering_supervision[i].cluster_centers_)
 
-            return prob, labels
+            return prob, labels, centers
 
 
 
