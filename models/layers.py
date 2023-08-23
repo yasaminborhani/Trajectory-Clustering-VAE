@@ -277,4 +277,4 @@ class GMM(tf.keras.layers.Layer):
     
     @property
     def means(self):
-        return self.centers
+        return self.centers(1.0)
