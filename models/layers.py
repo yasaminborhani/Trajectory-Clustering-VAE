@@ -229,38 +229,52 @@ class SigmaConstraint(tf.keras.constraints.Constraint):
     def __call__(self, w):
         return tf.clip_by_value(w, self.min_value, self.max_value)
 
+class CENTERS(tf.keras.layers.Layer):
+    def __init__(self, num_clusters, **kwargs):
+        super(CENTERS, self).__init__(**kwargs)
+        self.num_clusters = num_clusters
+    
+    def build(self, input_shape):
+        self.centers = self.add_weight(shape=(input_shape[-1], self.num_clusters),
+                                        trainable=True,
+                                        initializer='zeros',
+                                        name='cluster_centers')
+    def call(self, x):
+        return self.centers
+
+class SIGMA(tf.keras.layers.Layer):
+    def __init__(self, num_clusters, **kwargs):
+        super(SIGMA, self).__init__(**kwargs)
+        self.num_clusters = num_clusters
+    
+    def build(self, input_shape):
+        self.sigma = self.add_weight(shape=(input_shape[-1], self.num_clusters),
+                                        trainable=True,
+                                        initializer='ones',
+                                        name='sigma') * 10.0
+    def call(self, x):
+        return self.sigma
+
 class GMM(tf.keras.layers.Layer):
     def __init__(self, num_clusters, projection_dim=None, **kwargs):
         super(GMM, self).__init__(**kwargs)
-        self.num_clusters = num_clusters
+        self.num_clusters   = num_clusters
         self.projection_dim = projection_dim
-
     def build(self, input_shape):
-        self.centers = self.add_weight(
-            shape=(input_shape[-1], self.num_clusters),
-            trainable=True,
-            initializer='zeros',
-            name='cluster_centers'
-        )
-        self.sigma = self.add_weight(
-            shape=(input_shape[-1], self.num_clusters),
-            trainable=True,
-            initializer='ones',
-            name='sigma',
-            constraint=SigmaConstraint(min_value=5.0, max_value=25.0)
-        )
-        self.projection = tf.keras.layers.Dense(units=self.projection_dim, input_shape=(input_shape[-1],)) \
-            if self.projection_dim is not None else lambda x: x
+        self.centers = CENTERS(self.num_clusters)
+        self.sigma   = SIGMA(self.num_clusters)
+        self.projection = tf.keras.layers.Dense(units=self.projection_dim,
+                                                input_shape=(input_shape[-1],))\
+                         if self.projection_dim is not None else lambda x:x
         if self.projection_dim is not None:
             self.projection.build(input_shape=input_shape)
-
     def call(self, x):
-        x = self.projection(x)
-        sigma_h = self.sigma**2.0 + 1e-7
-        dist = tf.exp(-tf.pow(x[..., tf.newaxis] - self.centers, 2.0) / sigma_h)
-        probs = tf.exp(tf.reduce_sum(dist, axis=1)) / tf.reduce_sum(tf.exp(tf.reduce_sum(dist, axis=1)), axis=1, keepdims=True)
+        x       = self.projection(x)
+        sigma_h = self.sigma(x)**2.0 + 1e-7
+        dist    = tf.exp(-tf.pow(x[..., tf.newaxis] - self.centers(x), 2.0)/sigma_h)
+        probs   = tf.exp(tf.reduce_sum(dist, axis=1))/tf.reduce_sum(tf.exp(tf.reduce_sum(dist, axis=1)),axis=1,keepdims=True)
         return probs
-
+    
     @property
     def means(self):
         return self.centers
