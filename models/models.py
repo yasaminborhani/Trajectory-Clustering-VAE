@@ -20,7 +20,7 @@ def build_decoder_inputs(cfg):
         decoder_states += states
     
     direct_inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
-    x          = Normalize()(direct_inp) if cfg.Preprocess.normalization_method=='persample' else direct_inp
+    x          = direct_inp
     x          = x[:, :-cfg.Model.time_shift, :] if cfg.Model.time_shift>0 else x
     if cfg.Model.decoder_input_type=='tiled':
         x_2 = tf.keras.layers.Lambda(lambda x:tf.tile(tf.expand_dims(x, 1), [1, cfg.Model.temporal - cfg.Model.time_shift, 1]))(latent_inp)
@@ -51,7 +51,6 @@ def build_encoder(cfg):
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
     x   = inp[:, cfg.Model.time_shift:, :] if cfg.Model.time_shift>0 else inp
-    x   = Normalize()(x) if cfg.Preprocess.normalization_method=='persample' else x
     x   = DifferenceLayer()(x) if cfg.Model.differential_input else x
     act = getattr(tf.nn, cfg.Model.activation)
     

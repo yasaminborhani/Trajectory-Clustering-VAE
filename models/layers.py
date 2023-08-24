@@ -278,14 +278,3 @@ class GMM(tf.keras.layers.Layer):
     @property
     def means(self):
         return self.centers(1.0)
-
-class Normalize(tf.keras.layers.Layer):
-    def __init__(self, axis=1, **kwargs):
-        super(Normalize, self).__init__(**kwargs) 
-        self.axis = axis
-
-    def call(self, x):
-        max_val = tf.reduce_max(tf.math.abs(x), axis=self.axis, keepdims=True) 
-        min_val = tf.reduce_min(tf.math.abs(x), axis=self.axis, keepdims=True)
-        return x / (max_val + 1e-7)
-
