@@ -141,7 +141,7 @@ def normalize(x, normalization_method, normalization_params):
         return (x - mean) / (max - min)
     elif normalization_method == 'max':
         return (x) / (tf.math.maximum(tf.math.abs(max), tf.math.abs(min)))
-    elif normalization_method == 'persamples':
+    elif normalization_method == 'persample':
         max_val = tf.reduce_max(tf.math.abs(x), axis=1, keepdims=True) 
         min_val = tf.reduce_min(tf.math.abs(x), axis=1, keepdims=True)
         return x / (max_val + 1e-7)
