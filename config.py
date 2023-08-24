@@ -6,7 +6,7 @@ _C = CN()
 
 # Preprocess setting
 _C.Preprocess                           = CN() 
-_C.Preprocess.normalization_method      = 'max' #'max'/'standardization' / 'minmax' / 'zmeanminmax'
+_C.Preprocess.normalization_method      = 'persample' #'max'/'standardization' / 'minmax' / 'zmeanminmax' / 'persample'
 _C.Preprocess.temporal                  = 60
 _C.Preprocess.num_feat                  = 5
 _C.Preprocess.generator                 = 'tf_pipeline'
