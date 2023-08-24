@@ -32,14 +32,14 @@ _C.Train.callback_monitor               = 'silhouette_score'
 # Supervised Learning
 _C.Train.SelfSupVis                      = CN()
 _C.Train.SelfSupVis.num_clusters         = [3]
-_C.Train.SelfSupVis.update_frequency     = 3
-_C.Train.SelfSupVis.start_epoch          = 3
+_C.Train.SelfSupVis.update_frequency     = 1
+_C.Train.SelfSupVis.start_epoch          = 51
 _C.Train.SelfSupVis.clustering_method    = 'k-means'
 _C.Train.SelfSupVis.apply_supervision    = True
 _C.Train.SelfSupVis.projection_dim       = [12]
 _C.Train.SelfSupVis.loss                 = 'categorical_crossentropy'
 _C.Train.SelfSupVis.start_weight         = 0.0
-_C.Train.SelfSupVis.end_weight           = 0.5
+_C.Train.SelfSupVis.end_weight           = 1.5
 _C.Train.SelfSupVis.decay_rate           = 0.995
 
 # Validation setting
@@ -62,7 +62,7 @@ _C.Model.decoder_combined_input         = False
 _C.Model.decoder_input_type             = 'upsampled'  # 'tiled' / 'upsampled'
 
 _C.Model.Transformer                    = CN()
-_C.Model.Transformer.position_encoder   = 'angular'# 'angular' / 'embedding'
+_C.Model.Transformer.position_encoder   = 'embedding'# 'angular' / 'embedding'
 _C.Model.Transformer.encoder_encoding   = False
 _C.Model.Transformer.decoder_encoding   = False
 _C.Model.Transformer.encoder_blocks     = 1
@@ -78,12 +78,12 @@ _C.Model.LSTM.unroll                    = False
 _C.Model.LSTM.encoder_units             = [128, 64]
 _C.Model.LSTM.encoder_bidirectional     = False
 _C.Model.LSTM.encoder_dropout_rate      = 0.1
-_C.Model.LSTM.decoder_units             = [32, 64]
-_C.Model.LSTM.decoder_bidirectional     = True
+_C.Model.LSTM.decoder_units             = [64, 128]
+_C.Model.LSTM.decoder_bidirectional     = False
 _C.Model.LSTM.decoder_build_init_state  = False
 _C.Model.LSTM.decoder_dropout_rate      = 0.1
 
 # Visualization setting
 _C.Visualize                            = CN()
 _C.Visualize.perplexity_value           = 50
-_C.Visualize.n_cluster_range            = 3
+_C.Visualize.n_cluster_range            = [3, 4, 5]

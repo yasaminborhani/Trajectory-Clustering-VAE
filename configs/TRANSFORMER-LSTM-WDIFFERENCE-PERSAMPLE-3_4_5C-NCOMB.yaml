@@ -1,0 +1,12 @@
+Preprocess:
+    normalization_method: 'persample'
+
+Train:
+    SelfSupVis:
+        num_clusters: [3, 4, 5]
+        projection_dim: [12, 12, 12]
+
+Model:
+    differential_input: True 
+    encoder_type: 'Transformer'
+    decoder_type: 'LSTM'
