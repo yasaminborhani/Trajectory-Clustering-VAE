@@ -278,3 +278,12 @@ class GMM(tf.keras.layers.Layer):
     @property
     def means(self):
         return self.centers(1.0)
+
+class SinCos(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super(SinCos, self).__init__(**kwargs)
+    def call(self, x):
+        x_1 = x[..., :-1]
+        x_2 = x[..., -1:]
+
+        return tf.concat((x_1, tf.math.sin(x_2), tf.math.cos(x_2)), axis=-1)

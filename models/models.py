@@ -51,6 +51,7 @@ def build_encoder(cfg):
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
     x   = inp[:, cfg.Model.time_shift:, :] if cfg.Model.time_shift>0 else inp
+    x   = SinCos()(x)
     x   = DifferenceLayer()(x) if cfg.Model.differential_input else x
     act = getattr(tf.nn, cfg.Model.activation)
     
