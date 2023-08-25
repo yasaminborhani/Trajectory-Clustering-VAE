@@ -145,6 +145,11 @@ def normalize(x, normalization_method, normalization_params):
         max_val = tf.reduce_max(tf.math.abs(x), axis=1, keepdims=True) 
         min_val = tf.reduce_min(tf.math.abs(x), axis=1, keepdims=True)
         return x / (max_val + 1e-7)
+    elif normalization_method == 'persamplev2':
+        x_1 = x[..., :-1]
+        x_2 = x[..., -1:]
+        max_val = tf.reduce_max(tf.math.abs(x_1), axis=1, keepdims=True) 
+        return tf.concat((x_1 / (max_val + 1e-7), x_2), axis=-1)
     else:
         return x
 
