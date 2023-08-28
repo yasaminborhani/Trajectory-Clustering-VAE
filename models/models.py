@@ -302,7 +302,7 @@ class VAE(tf.keras.Model):
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data, training=True)
             dec_inputs     = self.dec_inp((z, data), training=True)
-            reconstruction = Unnormalize(self.decoder(dec_inputs, training=True), data)
+            reconstruction = Unnormalize()(self.decoder(dec_inputs, training=True), data)
             strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
@@ -335,9 +335,9 @@ class VAE(tf.keras.Model):
         dec_inputs     = self.dec_inp((z, x), training=training)
         reconstruction = self.decoder(dec_inputs, training=training)
         if not self.return_inputs_on_call:
-            return (z_mean, z_log_var, z, dec_inputs, Unnormalize(reconstruction, x)) 
+            return (z_mean, z_log_var, z, dec_inputs, Unnormalize()(reconstruction, x)) 
         else:
-            return (z_mean, z_log_var, z, dec_inputs, Unnormalize(reconstruction, x), x) 
+            return (z_mean, z_log_var, z, dec_inputs, Unnormalize()(reconstruction, x), x) 
             
 
     def test_step(self, data):
@@ -351,7 +351,7 @@ class VAE(tf.keras.Model):
         """
         z_mean, z_log_var, z = self.encoder(data, training=False)
         dec_inputs     = self.dec_inp((z, data), training=False)
-        reconstruction = Unnormalize(self.decoder(dec_inputs, training=False), data)
+        reconstruction = Unnormalize()(self.decoder(dec_inputs, training=False), data)
         strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
         reconstruction_loss = tf.reduce_mean(
             tf.reduce_sum(
