@@ -279,6 +279,25 @@ class GMM(tf.keras.layers.Layer):
     def means(self):
         return self.centers(1.0)
 
+class Normalize(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super(Normalize, self).__init__(**kwargs)
+    def call(self, x):
+        max_x1 = tf.reduce_max(tf.math.abs(x[...,:-1]), keepdims=True)
+        x1     = x[..., :-1]
+        x2     = x[..., -1:]
+        x1     = x1 * (max_x1 + 1e-7)
+        return tf.concat((x1, x2), axis=-1)
+
+class Unnormalize(tf.keras.layers.Layer):
+    def __init__(self, **kwargs):
+        super(Unnormalize, self).__init__(**kwargs)
+    def call(self, pred, data):
+        max_val = tf.reduce_max(tf.math.abs(data[..., :-1]), keepdims=True)
+        p1      = pred[..., :-1] * (max_val + 1e-7)
+        p2      = pred[..., -1:]
+        return tf.concat((p1, p2), axis=-1)
+
 class SinCos(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super(SinCos, self).__init__(**kwargs)

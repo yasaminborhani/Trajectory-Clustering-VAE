@@ -1,3 +1,4 @@
+
 import tensorflow as tf
 from .layers import *
 from .utils import KMeansTF
@@ -21,6 +22,7 @@ def build_decoder_inputs(cfg):
     
     direct_inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
     x          = direct_inp
+    x          = Normalize()(x)
     x          = x[:, :-cfg.Model.time_shift, :] if cfg.Model.time_shift>0 else x
     if cfg.Model.decoder_input_type=='tiled':
         x_2 = tf.keras.layers.Lambda(lambda x:tf.tile(tf.expand_dims(x, 1), [1, cfg.Model.temporal - cfg.Model.time_shift, 1]))(latent_inp)
@@ -51,6 +53,7 @@ def build_encoder(cfg):
     """
     inp = tf.keras.layers.Input((cfg.Model.temporal, cfg.Model.num_feat))
     x   = inp[:, cfg.Model.time_shift:, :] if cfg.Model.time_shift>0 else inp
+    x   = Normalize()(x)
     x   = SinCos()(x)
     x   = DifferenceLayer()(x) if cfg.Model.differential_input else x
     act = getattr(tf.nn, cfg.Model.activation)
@@ -299,7 +302,7 @@ class VAE(tf.keras.Model):
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data, training=True)
             dec_inputs     = self.dec_inp((z, data), training=True)
-            reconstruction = self.decoder(dec_inputs, training=True)
+            reconstruction = Unnormalize(self.decoder(dec_inputs, training=True), data)
             strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
@@ -332,9 +335,9 @@ class VAE(tf.keras.Model):
         dec_inputs     = self.dec_inp((z, x), training=training)
         reconstruction = self.decoder(dec_inputs, training=training)
         if not self.return_inputs_on_call:
-            return (z_mean, z_log_var, z, dec_inputs, reconstruction) 
+            return (z_mean, z_log_var, z, dec_inputs, Unnormalize(reconstruction, x)) 
         else:
-            return (z_mean, z_log_var, z, dec_inputs, reconstruction, x) 
+            return (z_mean, z_log_var, z, dec_inputs, Unnormalize(reconstruction, x), x) 
             
 
     def test_step(self, data):
@@ -348,7 +351,7 @@ class VAE(tf.keras.Model):
         """
         z_mean, z_log_var, z = self.encoder(data, training=False)
         dec_inputs     = self.dec_inp((z, data), training=False)
-        reconstruction = self.decoder(dec_inputs, training=False)
+        reconstruction = Unnormalize(self.decoder(dec_inputs, training=False), data)
         strided_data   = data[:, :-self.ts, :] if self.ts>0 else data
         reconstruction_loss = tf.reduce_mean(
             tf.reduce_sum(
