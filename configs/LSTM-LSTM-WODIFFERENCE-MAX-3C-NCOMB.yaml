@@ -1,5 +1,5 @@
 Preprocess:
-    normalization_method: 'persample'
+    normalization_method: 'max'
 
 Train:
     SelfSupVis:
@@ -7,6 +7,6 @@ Train:
         projection_dim: [12]
 
 Model:
-    differential_input: True 
-    encoder_type: 'Transformer'
+    differential_input: False 
+    encoder_type: 'LSTM'
     decoder_type: 'LSTM'

@@ -1,5 +1,5 @@
 Preprocess:
-    normalization_method: 'persample'
+    normalization_method: 'max'
 
 Train:
     SelfSupVis:
