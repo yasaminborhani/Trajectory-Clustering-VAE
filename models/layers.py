@@ -286,7 +286,7 @@ class Normalize(tf.keras.layers.Layer):
         max_x1 = tf.reduce_max(tf.math.abs(x[...,:-1]), keepdims=True)
         x1     = x[..., :-1]
         x2     = x[..., -1:]
-        x1     = x1 * (max_x1 + 1e-7)
+        x1     = x1 / (max_x1 + 1e-7)
         return tf.concat((x1, x2), axis=-1)
 
 class Unnormalize(tf.keras.layers.Layer):
