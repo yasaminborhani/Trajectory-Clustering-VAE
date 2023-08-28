@@ -23,16 +23,6 @@ The project offers the versatility of unsupervised training as well as advanced 
    
 2. **Stage Two**: Building on the groundwork laid in Stage One, the VAE's layers are frozen, enabling the Gaussian mixture layer to become trainable. The model takes in latent dimensions and compares predictions with k-means labels, enhancing the understanding of agent behaviors.
    
-3. **Stage Three**: The project reaches its apex as all layers are set to be trainable. This comprehensive training stage fine-tunes the model's capabilities, resulting in a refined clustering of agent behaviors.
+3. **Stage Three**: The project reaches its apex as all layers are set to be trainable. This training stage fine-tunes the model's capabilities, resulting in a refined clustering of agent behaviors.
 
-## Usage and Contribution
 
-The repository encourages collaboration and welcomes contributions from the community. If you're interested in getting involved, refer to the contribution guidelines in the repository. Your input can help enhance the capabilities and understanding of agent behaviors through innovative clustering techniques.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-Feel free to modify this version to match the nuances of your project. A well-crafted README will provide users with a clear understanding of your project's objectives, features, and structure.
