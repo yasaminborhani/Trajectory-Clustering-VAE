@@ -83,12 +83,6 @@ _C.Model.LSTM.decoder_bidirectional     = False
 _C.Model.LSTM.decoder_build_init_state  = False
 _C.Model.LSTM.decoder_dropout_rate      = 0.1
 
-_C.Model.CNN                            = CN()
-_C.Model.CNN.kernel_size                = 3
-_C.Model.CNN.strides                    = 2
-_C.Model.CNN.start_filters              = 128
-_C.Model.CNN.layers_num                 = 2
-
 # Visualization setting
 _C.Visualize                            = CN()
 _C.Visualize.perplexity_value           = 50
