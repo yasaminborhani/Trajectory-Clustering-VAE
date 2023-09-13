@@ -172,7 +172,49 @@ def plot_clusters(clustering_labels, z_mean, cluster_centers):
     plt.show()
 
 
-
+def plot_trajectories(y_true, y_pred):
+    # plot x trajectory
+    plt.suptitle('X-time Plot')
+    for i in range(4):
+        plt.subplot(2,2,i+1)
+        plt.plot(data[i,:,0], linewidth=4)
+        plt.plot(Y[i,:,0], linewidth=4)
+        if i == 2 or i == 3:
+            plt.xlabel('Duration')
+        plt.ylabel('X')
+        plt.grid('on')
+        plt.legend(['input', 'output'])
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
+    plt.show()
+    
+    plt.suptitle('Y-time Plot')
+    # plot y trajectory
+    for i in range(4):
+        plt.subplot(2,2,i+1)
+        plt.plot(data[i,:,1], linewidth=4)
+        plt.plot(Y[i,:,1], linewidth=4)
+        if i == 2 or i == 3:
+            plt.xlabel('Duration')
+        plt.ylabel('Y')
+        plt.grid('on')
+        plt.legend(['input', 'output'])
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
+    plt.show()
+    
+    plt.suptitle('X-Y Plot')
+    for i in range(4):
+        plt.subplot(2,2,i+1)
+        plt.plot(data[i,:,0],data[i,:,1], linewidth=4)
+        plt.plot(Y[i,:,0],Y[i,:,1], linewidth=4)
+        if i == 2 or i == 3:
+            plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.grid('on')
+        plt.legend(['input', 'output'])
+        plt.subplots_adjust(hspace=0.3, wspace=0.3)
+    plt.show()
+    
+    
 class SilhouetteScoreCallback(tf.keras.callbacks.Callback):
     def __init__(self, data, cluster_num, manager):
         super(SilhouetteScoreCallback, self).__init__()
