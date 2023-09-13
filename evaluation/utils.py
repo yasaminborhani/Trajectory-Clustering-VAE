@@ -173,6 +173,8 @@ def plot_clusters(clustering_labels, z_mean, cluster_centers):
 
 
 def plot_trajectories(y_true, y_pred):
+    data = y_true
+    Y    = y_pred
     # plot x trajectory
     plt.suptitle('X-time Plot')
     for i in range(4):
