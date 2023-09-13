@@ -80,6 +80,12 @@ def build_encoder(cfg):
                                  activation=act,
                                  res_connection=cfg.Model.Transformer.res_connection)(x)
         x = tf.keras.layers.GlobalAveragePooling1D()(x)
+
+    elif cfg.Model.encoder_type == 'CNN':
+        for i in range(cfg.Model.CNN.layers_num):
+            x = tf.keras.layers.Conv1D(cfg.Model.CNN.start_filters//(2**(i)) , kernel_size=cfg.Model.CNN.kernel_size, strides=cfg.Model.CNN.strides, padding='same')(x)
+            
+        x = tf.keras.layers.GlobalAveragePooling1D()(x)
     
     z_mean = tf.keras.layers.Dense(cfg.Model.latent, name="z_mean")(x)
     z_log_var = tf.keras.layers.Dense(cfg.Model.latent, name="z_log_var")(x)
@@ -126,7 +132,7 @@ def build_decoder(cfg):
                                      return_sequences=rt_seq), 
                                      cfg.Model.LSTM.decoder_bidirectional)(x,
                                                                            initial_state=init_states[i*multiplier:(i+1)*multiplier])
-
+        decoder_output = tf.keras.layers.Dense(cfg.Model.num_feat)(x)
 
     elif cfg.Model.decoder_type == 'Transformer':
         if cfg.Model.Transformer.position_encoder == 'angular' and cfg.Model.Transformer.decoder_encoding:
@@ -141,8 +147,15 @@ def build_decoder(cfg):
                                  droprate=cfg.Model.Transformer.encoder_droprate,
                                  activation=act,
                                  res_connection=cfg.Model.Transformer.res_connection)(x)
+        decoder_output = tf.keras.layers.Dense(cfg.Model.num_feat)(x)
 
-    decoder_output = tf.keras.layers.Dense(cfg.Model.num_feat)(x)
+    elif cfg.Model.decoder_type == 'CNN':
+        for i in range(cfg.Model.CNN.layers_num):
+            x = tf.keras.layers.Conv1DTranspose(cfg.Model.CNN.start_filters//(2**(cfg.Model.CNN.layers_num-1-i)) , kernel_size=cfg.Model.CNN.kernel_size, strides=cfg.Model.CNN.strides, padding='same')(x)
+           
+        x = tf.keras.layers.GlobalAveragePooling1D()(x)
+        decoder_output = tf.keras.layers.Dense(cfg.Model.temporal * cfg.Model.num_feat)(x)
+        decoder_output = tf.keras.layers.Reshape((cfg.Model.temporal, cfg.Model.num_feat))(decoder_output)
     
     decoder_output = ReverseDifferenceLayer()(decoder_output) if\
                      cfg.Model.differential_input else decoder_output
