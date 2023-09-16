@@ -5,6 +5,37 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score, r2_score
 mpl.style.use('seaborn-v0_8')
 
+def physical_constrained_loss(y_true, y_pred, coef=[0.01,0.01,0.01]):
+    x_t  = y_true[:,:,0]
+    y_t  = y_true[:,:,1]
+    h_t  = y_true[:,:,2]
+    vx_t = y_true[:,:,3]
+    vy_t = y_true[:,:,4]
+
+    x_p  = y_pred[:,:,0]
+    y_p  = y_pred[:,:,1]
+    h_p  = y_pred[:,:,2]
+    vx_p = y_pred[:,:,3]
+    vy_p = y_pred[:,:,4]
+
+    vx_pred  = (x_p[:,1:] - x_p[:,:-1]) * 10.0
+    vy_pred  = (y_p[:,1:] - y_p[:,:-1]) * 10.0
+    h_pred_1 = tf.math.atan2(vy_p, vx_p)
+    h_pred_2 = tf.math.atan2(vy_pred, vx_pred)
+
+    v_loss   = tf.keras.losses.MAE(vx_t[:,:-1], vx_pred) + tf.keras.losses.MAE(vy_t[:,:-1], vy_pred)
+    h_loss_1 = tf.keras.losses.MAE(h_t, h_pred_1) + tf.keras.losses.MAE(h_p, h_pred_1)
+    h_loss_2 = tf.keras.losses.MAE(h_t[:,:-1], h_pred_2) + tf.keras.losses.MAE(h_p[:,:-1], h_pred_2)
+
+    loss = coef[0] * v_loss + coef[1] * h_loss_1 + coef[2] * h_loss_2
+
+    return loss
+
+
+
+
+
+
 
 class CustomCallback(tf.keras.callbacks.Callback):
     """

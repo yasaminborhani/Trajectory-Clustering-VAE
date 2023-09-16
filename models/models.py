@@ -306,7 +306,7 @@ class VAE(tf.keras.Model):
             )
             kl_loss = -klw * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
             kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-            total_loss = reconstruction_loss + kl_loss
+            total_loss = reconstruction_loss + kl_loss + physical_constrained_loss(data,reconstruction,self.cfg.Train.physical_cons_coef)
             if self.apply_supervision:
                 supervision_loss = self.self_supervision_step(z_mean)
                 total_loss = total_loss + supervision_loss
@@ -355,7 +355,7 @@ class VAE(tf.keras.Model):
         )
         kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
         kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
-        total_loss = reconstruction_loss + kl_loss
+        total_loss = reconstruction_loss + kl_loss + physical_constrained_loss(data,reconstruction,self.cfg.Train.physical_cons_coef)
         if self.apply_supervision:
                 supervision_loss = self.self_supervision_step(z_mean)
                 total_loss = total_loss + supervision_loss

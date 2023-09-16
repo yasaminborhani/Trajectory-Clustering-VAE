@@ -23,6 +23,7 @@ _C.Train.shuffle_buffer_size            = 512
 _C.Train.init_learning_rate             = 0.001
 _C.Train.optimizer                      = 'Adam' # 'Adam' / 'SGD'/ ...
 _C.Train.loss_type                      = 'mae'  # 'mae' / 'mse'
+_C.Train.physical_cons_coef             = [0.01, 0.01, 0.01]
 _C.Train.kl_weight                      = 0.5
 _C.Train.kl_weight_start                = 0.01
 _C.Train.kl_decay_rate                  = 0.99995
