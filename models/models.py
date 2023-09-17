@@ -1,6 +1,6 @@
 import tensorflow as tf
 from .layers import *
-from .utils import KMeansTF
+from .utils import *
 
 def build_decoder_inputs(cfg):
     latent_inp = tf.keras.layers.Input((cfg.Model.latent), name='z_input')
